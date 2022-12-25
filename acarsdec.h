@@ -154,7 +154,10 @@ extern int initSoundfile(char **argv,int optind);
 extern int runSoundfileSample(void);
 #endif
 #ifdef WITH_RTL
-extern int initRtl(char **argv,int optind);
+//extern int initRtl(char **argv,int optind);
+extern int initRtl(int ,char **);
+int preinitRtl_exe(char ** argv, int optind);
+int preinitRtl_lib(char * device, char * freq);
 extern int runRtlSample(void);
 #endif
 #ifdef WITH_AIR
@@ -168,7 +171,7 @@ extern void demodMSK(channel_t *ch,int len);
 
 
 extern int  initAcars(channel_t *);
-extern void decodeAcars(channel_t *);
+extern void decodeAcars(channel_t *, int );
 extern int  deinitAcars(channel_t *);
 
 extern int DecodeLabel(acarsmsg_t *msg,oooi_t *oooi);

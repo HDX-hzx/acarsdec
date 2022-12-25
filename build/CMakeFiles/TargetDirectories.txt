@@ -1,0 +1,8 @@
+/home/jiaxv/inoproject/acarsdec/build/CMakeFiles/acarsdec.dir
+/home/jiaxv/inoproject/acarsdec/build/CMakeFiles/acarsrec.dir
+/home/jiaxv/inoproject/acarsdec/build/CMakeFiles/edit_cache.dir
+/home/jiaxv/inoproject/acarsdec/build/CMakeFiles/rebuild_cache.dir
+/home/jiaxv/inoproject/acarsdec/build/CMakeFiles/list_install_components.dir
+/home/jiaxv/inoproject/acarsdec/build/CMakeFiles/install.dir
+/home/jiaxv/inoproject/acarsdec/build/CMakeFiles/install/local.dir
+/home/jiaxv/inoproject/acarsdec/build/CMakeFiles/install/strip.dir

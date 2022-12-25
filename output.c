@@ -300,6 +300,7 @@ void outpp(acarsmsg_t * msg)
 		msg->fid, txt);
 
 	write(sockfd, pkt, strlen(pkt));
+
 	free(txt);
 }
 
@@ -638,7 +639,7 @@ void outputmsg(const msgblk_t * blk)
 	int outflg=0;
 	flight_t *fl=NULL;
 
-	/* fill msg struct */
+    /* fill msg struct */
 	memset(&msg, 0, sizeof(msg));
 	msg.lvl = blk->lvl;
 	msg.err = blk->err;
@@ -681,8 +682,15 @@ void outputmsg(const msgblk_t * blk)
 	msg.bs = blk->txt[k];
 	k++;
 
-	if (airflt && !down)
-		return;
+	/* downlink only */
+	if(airflt == 1){
+        if (!down)
+            return;
+	}else{   /* uplink only */
+	    if(down)
+	        return;
+	}
+
 	if(label_filter(msg.label)==0)
 		return;
 

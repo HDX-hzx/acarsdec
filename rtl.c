@@ -54,8 +54,9 @@ int verbose_device_search(char *s)
 		fprintf(stderr, "No supported devices found.\n");
 		return -1;
 	}
-	if (verbose)
-		fprintf(stderr, "Found %d device(s):\n", device_count);
+	if (verbose){
+        fprintf(stderr, "Found %d device(s):\n", device_count);
+	}
 	for (i = 0; i < device_count; i++) {
 		rtlsdr_get_device_usb_strings(i, vendor, product, serial);
 		if (verbose)
@@ -183,20 +184,64 @@ int nearest_gain(int target_gain)
 	return close_gain;
 }
 
-int initRtl(char **argv, int optind)
+int preinitRtl_exe(char ** argv, int optind){
+    char *argF;
+    char * freqs[MAXNBCHANNELS];
+
+    if (argv[optind] == NULL) {
+        fprintf(stderr, "Need device name or index (ex: 0) after -r\n");
+        exit(1);
+    }
+    int dev_index = verbose_device_search(argv[optind]);
+    optind++;
+
+    nbch = 0;
+    while ((argF = argv[optind]) && nbch < MAXNBCHANNELS) {
+        freqs[nbch] = argF;
+
+        optind++;
+        nbch++;
+        if(argv[optind] == NULL){
+            freqs[nbch] = NULL;
+        }
+    }
+
+    initRtl(dev_index, freqs);
+    return 0;
+}
+
+int preinitRtl_lib(char * device, char * freq){
+    char *argF;
+    char * freqs[MAXNBCHANNELS];
+
+    if (device == NULL) {
+        fprintf(stderr, "Need device name or index (ex: 0) after -r\n");
+        exit(1);
+    }
+    int dev_index = verbose_device_search(device);
+
+    freqs[0] = freq;
+    freqs[1] = NULL;
+
+    initRtl(dev_index, freqs);
+    return 0;
+}
+
+int initRtl(int di, char ** af)
 {
-	int r, n;
+	int r, n, i;
 	int dev_index;
 	char *argF;
 	unsigned int Fc;
 	unsigned int Fd[MAXNBCHANNELS];
 
-	if (argv[optind] == NULL) {
-		fprintf(stderr, "Need device name or index (ex: 0) after -r\n");
-		exit(1);
-	}
-	dev_index = verbose_device_search(argv[optind]);
-	optind++;
+    //if (argv[optind] == NULL) {
+	//	fprintf(stderr, "Need device name or index (ex: 0) after -r\n");
+	//	exit(1);
+	//}
+	//dev_index = verbose_device_search(argv[optind]);
+	dev_index = di;
+	//optind++;
 
 	r = rtlsdr_open(&dev, dev_index);
 	if (r < 0) {
@@ -205,6 +250,7 @@ int initRtl(char **argv, int optind)
 	}
 
 	rtlsdr_set_tuner_gain_mode(dev, 1);
+    //gain = 200;
 	r = rtlsdr_set_tuner_gain(dev, nearest_gain(gain));
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to set gain.\n");
@@ -217,11 +263,13 @@ int initRtl(char **argv, int optind)
 	}
 
 	nbch = 0;
-	while ((argF = argv[optind]) && nbch < MAXNBCHANNELS) {
+	i = 0;
+    while ((argF = af[i]) && nbch < MAXNBCHANNELS) {
+        fprintf(stderr, "%s ", af[i]);
 		Fd[nbch] =
 		    ((int)(1000000 * atof(argF) + INTRATE / 2) / INTRATE) *
 		    INTRATE;
-		optind++;
+		i++;
 		if (Fd[nbch] < 118000000 || Fd[nbch] > 138000000) {
 			fprintf(stderr, "WARNING: Invalid frequency %d\n",
 				Fd[nbch]);
@@ -287,6 +335,7 @@ static void in_callback(unsigned char *rtlinbuff, uint32_t nread, void *ctx)
 {
 	int n;
 
+
 	if (nread != RTLINBUFSZ) {
 		fprintf(stderr, "warning: partial read\n");
 		return;
@@ -326,6 +375,9 @@ int runRtlSample(void)
 	int r;
 
 	status = 1;
+	/*
+	 * 创建异步进程解调
+	 */
 	r = rtlsdr_read_async(dev, in_callback, NULL, 4, RTLINBUFSZ);
 	if (r) {
 		fprintf(stderr, "Read async %d\n", r);

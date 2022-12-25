@@ -27,103 +27,109 @@ static float h[2*FLEN];
 
 int initMsk(channel_t * ch)
 {
-	int i;
 
-	ch->MskPhi = ch->MskClk = 0;
-	ch->MskS = 0;
+    int i;
 
-	ch->MskDf = 0;
+    ch->MskPhi = ch->MskClk = 0;
+    ch->MskS = 0;
 
-	ch->idx = 0;
-	ch->inb = calloc(FLEN, sizeof(float complex));
+    ch->MskDf = 0;
 
-	for (i = 0; i < FLEN; i++) {
-		if(ch->chn==0)  {
-			h[i] = h[i+FLEN]= cosf(2.0*M_PI*600.0/INTRATE*(i-FLEN/2));
-		}
-		ch->inb[i] = 0;
-	}
+    ch->idx = 0;
+    ch->inb = calloc(FLEN, sizeof(float complex));
 
-	return 0;
+    for (i = 0; i < FLEN; i++) {
+        if(ch->chn==0)  {
+            h[i] = h[i+FLEN]= cosf(2.0*M_PI*600.0/INTRATE*(i-FLEN/2));
+        }
+
+        ch->inb[i] = 0;
+    }
+
+    return 0;
 }
 
-static inline void putbit(float v, channel_t * ch)
+static inline void putbit(float v, channel_t * ch, int n)
 {
-	ch->outbits >>= 1;
-	if (v > 0) {
-		ch->outbits |= 0x80;
-	} 
-
-	ch->nbits--;
-	if (ch->nbits <= 0)
-		decodeAcars(ch);
+    ch->outbits >>= 1;
+    if (v > 0) {
+        ch->outbits |= 0x80;
+    }
+    ch->nbits--;
+    if (ch->nbits <= 0){
+        decodeAcars(ch, n);
+    }
 }
 
 const float PLLG=38e-4;
 const float PLLC=0.52;
 void demodMSK(channel_t *ch,int len)
 {
-   /* MSK demod */
-   int n;
-   int idx=ch->idx;
-   double p=ch->MskPhi;
+    /* MSK demod */
+    int n;
+    int idx=ch->idx;
+    double p=ch->MskPhi;
 
-   for(n=0;n<len;n++) {	
-   	float in;
-	double s;
-	float complex v;
-	int j,o;
 
-	/* VCO */
-	s = 1800.0/INTRATE*2.0*M_PI + ch->MskDf;
-	p+=s;
-	if (p >= 2.0*M_PI) p -= 2.0*M_PI; 
+    for(n=0;n<len;n++) {
+        float in;
+        double s;
+        float complex v;
+        int j,o;
 
-	/* mixer */
-	in = ch->dm_buffer[n];
+        /* VCO */
+        s = 1800.0/INTRATE*2.0*M_PI + ch->MskDf;
+
+
+        p+=s;
+        if (p >= 2.0*M_PI) p -= 2.0*M_PI;
+
+        /* mixer */
+        in = ch->dm_buffer[n];
 #ifdef DEBUG
-	if(ch->chn==1) SndWrite(&in);
+        if(ch->chn==1) SndWrite(&in);
 #endif
-	ch->inb[idx] = in * cexp(-p*I);
-	idx=(idx+1)%FLEN;
+        ch->inb[idx] = in * cexp(-p*I);
+        idx=(idx+1)%FLEN;
 
 
-	/* bit clock */
-	ch->MskClk+=s;
-	if (ch->MskClk >=3*M_PI/2.0) {
-		double dphi;
-		float vo,lvl;
+        /* bit clock */
+        ch->MskClk+=s;
+        if (ch->MskClk >=3*M_PI/2.0) {
+            double dphi;
+            float vo,lvl;
 
-		ch->MskClk -= 3*M_PI/2.0;
+            ch->MskClk -= 3*M_PI/2.0;
 
-		/* matched filter */
-		o=FLEN-idx;
-		v=0;
-		for (j = 0; j < FLEN; j++,o++) {
-			v += h[o]*ch->inb[j];
-		}
-		/* normalize */
-		lvl=cabsf(v);
-		v/=lvl+1e-6;
-		ch->Msklvl = 0.99 * ch->Msklvl + 0.01*lvl/5.2;
+            /* matched filter */
+            o=FLEN-idx;
+            v=0;
+            for (j = 0; j < FLEN; j++,o++) {
+                v += h[o]*ch->inb[j];
+            }
+            /* normalize */
+            lvl=cabsf(v);
+            v/=lvl+1e-6;
+            ch->Msklvl = 0.99 * ch->Msklvl + 0.01*lvl/5.2;
 
-		if(ch->MskS&1) {
-			vo=cimagf(v);
-			if(vo>=0) dphi=-crealf(v); else dphi=crealf(v);
-		} else {
-			vo=crealf(v);
-			if(vo>=0) dphi=cimagf(v); else dphi=-cimagf(v);
-		}
-		if(ch->MskS&2) {
-			putbit(-vo, ch);
-		} else {
-			putbit(vo, ch);
-		}
-		ch->MskS++;
+            if(ch->MskS&1) {
+                vo=cimagf(v);
+                if(vo>=0) dphi=-crealf(v); else dphi=crealf(v);
+            } else {
+                vo=crealf(v);
+                if(vo>=0) dphi=cimagf(v); else dphi=-cimagf(v);
+            }
 
-		/* PLL filter */
-		ch->MskDf=PLLC*ch->MskDf+(1.0-PLLC)*PLLG*dphi;
-	}
+            if(ch->MskS&2) {
+                putbit(-vo, ch, n);
+            } else {
+                putbit(vo, ch, n);
+            }
+            ch->MskS++;
+
+            /* PLL filter */
+            ch->MskDf=PLLC*ch->MskDf+(1.0-PLLC)*PLLG*dphi;
+        }
     }
 
     ch->idx=idx;

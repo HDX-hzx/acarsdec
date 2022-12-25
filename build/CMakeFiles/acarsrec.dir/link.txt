@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC -shared -Wl,-soname,libacarsrec.so -o libacarsrec.so CMakeFiles/acarsrec.dir/testing.c.o CMakeFiles/acarsrec.dir/acars.c.o CMakeFiles/acarsrec.dir/cJSON.c.o CMakeFiles/acarsrec.dir/label.c.o CMakeFiles/acarsrec.dir/msk.c.o CMakeFiles/acarsrec.dir/output.c.o CMakeFiles/acarsrec.dir/rtl.c.o  -lacars-2 -lrtlsdr -lpthread -lm 

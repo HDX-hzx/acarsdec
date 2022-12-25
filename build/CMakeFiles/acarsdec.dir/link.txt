@@ -1,0 +1,1 @@
+/usr/bin/cc -rdynamic CMakeFiles/acarsdec.dir/acars.c.o CMakeFiles/acarsdec.dir/acarsdec.c.o CMakeFiles/acarsdec.dir/cJSON.c.o CMakeFiles/acarsdec.dir/label.c.o CMakeFiles/acarsdec.dir/msk.c.o CMakeFiles/acarsdec.dir/output.c.o CMakeFiles/acarsdec.dir/rtl.c.o -o acarsdec  -lacars-2 -lrtlsdr -lpthread -lm 
