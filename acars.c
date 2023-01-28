@@ -115,15 +115,8 @@ static void *blk_thread(void *arg)
             continue;
         }
 
-        for(int tt = 0; tt < 12; tt++){
-            fprintf(stderr, "%d ", blk->txt[tt]);
-        }
-        fprintf(stderr, "\n");
-
         char ack = blk->txt[8];
-
-        fprintf(stderr, "ack   %d\n", ack);
-
+        fprintf(stderr, "Receive 1 message!!!, ack = %d\n", ack);
 
         /* force STX/ETX */
         blk->txt[12] &= (ETX | STX);
@@ -204,11 +197,8 @@ static void *blk_thread(void *arg)
             free(blk);
             continue;
         }
-
         outputmsg(blk);
-
         free(blk);
-
     } while (1);
     return NULL;
 }
@@ -336,7 +326,6 @@ void decodeAcars(channel_t * ch, int n)
             return;
         case CRC2:
             ch->blk->crc[1] = r;
-
             fprintf(stderr, "crc in message :   %d %d\n",ch->blk->crc[0], ch->blk->crc[1]);
         putmsg_lbl:
             ch->blk->lvl = 10*log10(ch->Msklvl);

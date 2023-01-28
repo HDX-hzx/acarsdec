@@ -392,7 +392,7 @@ static void printmsg(acarsmsg_t * msg, int chn, struct timeval tv)
 }
 
 
-static int buildjson(acarsmsg_t * msg, int chn, struct timeval tv)
+static int buildjson(acarsmsg_t * msg, int chn, struct timeval tv, const unsigned char * crc)
 {
 
 	oooi_t oooi;
@@ -433,6 +433,7 @@ static int buildjson(acarsmsg_t * msg, int chn, struct timeval tv)
 		}
 
 		cJSON_AddStringToObject(json_obj, "tail", msg->addr);
+        cJSON_AddStringToObject(json_obj, "crc", crc);
 		if(IS_DOWNLINK_BLK(msg->bid)) {
 			cJSON_AddStringToObject(json_obj, "flight", msg->fid);
 			cJSON_AddStringToObject(json_obj, "msgno", msg->no);
@@ -673,6 +674,7 @@ void outputmsg(const msgblk_t * blk)
 	k++;
 
 	bool down = IS_DOWNLINK_BLK(msg.bid);
+
 #ifdef HAVE_LIBACARS
 	la_msg_dir msg_dir = down ? LA_MSG_DIR_AIR2GND : LA_MSG_DIR_GND2AIR;
 	msg.reasm_status = LA_REASM_SKIPPED;    // default value (valid for message with empty text)
@@ -684,10 +686,10 @@ void outputmsg(const msgblk_t * blk)
 
 	/* downlink only */
 	if(airflt == 1){
-        if (!down)
+        if (down)
             return;
 	}else{   /* uplink only */
-	    if(down)
+	    if(!down)
 	        return;
 	}
 
@@ -730,6 +732,7 @@ void outputmsg(const msgblk_t * blk)
 			k += offset;
 			txt_len -= offset;
 		}
+        fprintf(stderr, "suffix: %d", blk->txt[blk->len]);
 
 		la_reasm_table *acars_rtable = NULL;
 		if(msg.bid != 0 && reasm_ctx != NULL) { // not a squitter && reassembly engine is enabled
@@ -806,7 +809,7 @@ void outputmsg(const msgblk_t * blk)
 		if(outtype == OUTTYPE_ROUTEJSON )
 			jok=routejson(fl,blk->tv);
 		else
-			jok=buildjson(&msg, blk->chn, blk->tv);
+			jok=buildjson(&msg, blk->chn, blk->tv, blk->crc);
 	}
 
 	if((hourly || daily) && outtype != OUTTYPE_NONE && rotate_outfile() < 0) {

@@ -85,11 +85,11 @@ int startRecv(int v , int mode, char * addr, char * ppm_i, char * index, char * 
 
     verbose = v;
     airflt = mode == UPLINK ? 2 : 1;
-    printf("MOOOODDDE   %d  %d\n", airflt, mode);
+    //printf("MOOOODDDE   %d  %d\n", airflt, mode);
     Rawaddr = addr;
     netout = NETLOG_JSON;
     ppm = atoi(ppm_i);
-    printf("%d  %s %d  %s %s  \n", airflt, Rawaddr, ppm, index, freq);
+    //printf("%d  %s %d  %s %s  \n", airflt, Rawaddr, ppm, index, freq);
     res = preinitRtl_lib(index, freq);
 
     res = initOutput(logfilename, Rawaddr);
@@ -105,7 +105,6 @@ int startRecv(int v , int mode, char * addr, char * ppm_i, char * index, char * 
     sigaction(SIGTERM, &sigact, NULL);
     sigaction(SIGQUIT, &sigact, NULL);
 
-    fprintf(stderr, "??????wwwww %d\n", airflt);
     for (n = 0; n < nbch; n++) {
         channel[n].chn = n;
 
