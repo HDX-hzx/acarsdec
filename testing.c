@@ -75,7 +75,6 @@ static void sighandler(int signum)
 }
 
 int startRecv(int v , int mode, char * addr, char * ppm_i, char * index, char * freq){
-    printf("%s\n", freq);
     int res, n;
     struct sigaction sigact;
     char sys_hostname[HOST_NAME_MAX+1];
@@ -85,11 +84,9 @@ int startRecv(int v , int mode, char * addr, char * ppm_i, char * index, char * 
 
     verbose = v;
     airflt = mode == UPLINK ? 2 : 1;
-    //printf("MOOOODDDE   %d  %d\n", airflt, mode);
     Rawaddr = addr;
     netout = NETLOG_JSON;
     ppm = atoi(ppm_i);
-    //printf("%d  %s %d  %s %s  \n", airflt, Rawaddr, ppm, index, freq);
     res = preinitRtl_lib(index, freq);
 
     res = initOutput(logfilename, Rawaddr);

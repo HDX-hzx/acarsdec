@@ -219,6 +219,7 @@ int preinitRtl_lib(char * device, char * freq){
         exit(1);
     }
     int dev_index = verbose_device_search(device);
+    fprintf(stderr, "%s\n\n", device);
 
     freqs[0] = freq;
     freqs[1] = NULL;

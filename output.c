@@ -442,8 +442,11 @@ static int buildjson(acarsmsg_t * msg, int chn, struct timeval tv, const unsigne
 	if(msg->txt[0])
 		cJSON_AddStringToObject(json_obj, "text", msg->txt);
 
-	if (msg->be == 0x17)
-		cJSON_AddTrueToObject(json_obj, "end");
+	if (msg->be == 0x03)
+		cJSON_AddBoolToObject(json_obj, "end", true);
+	else
+        //cJSON_AddStringToObject(json_obj, "end", "False");
+        cJSON_AddBoolToObject(json_obj, "end", false);
 
 	if(DecodeLabel(msg, &oooi)) {
 		if(oooi.sa[0])

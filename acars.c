@@ -109,14 +109,13 @@ static void *blk_thread(void *arg)
 
         if (blk->len < 13) {
             if (verbose)
-                fprintf(stderr, "#%d too short\n",
+                fprintf(stderr, "acarsdec:  #%d too short\n",
                         blk->chn + 1);
             free(blk);
             continue;
         }
 
         char ack = blk->txt[8];
-        fprintf(stderr, "Receive 1 message!!!, ack = %d\n", ack);
 
         /* force STX/ETX */
         blk->txt[12] &= (ETX | STX);
@@ -136,13 +135,13 @@ static void *blk_thread(void *arg)
         if (pn > MAXPERR) {
             if (verbose)
                 fprintf(stderr,
-                        "#%d too many parity errors: %d\n",
+                        "acarsdec:   #%d too many parity errors: %d\n",
                         blk->chn + 1, pn);
             free(blk);
             continue;
         }
         if (pn > 0 && verbose)
-            fprintf(stderr, "#%d parity error(s): %d\n",
+            fprintf(stderr, "acarsdec:   #%d parity error(s): %d\n",
                     blk->chn + 1, pn);
         blk->err = pn;
         if (ack == 0x15){
@@ -155,33 +154,32 @@ static void *blk_thread(void *arg)
             update_crc(crc, blk->crc[1]);
 
             if (crc && verbose)
-                fprintf(stderr, "#%d crc error\n", blk->chn + 1);
+                fprintf(stderr, "acarsdec:   #%d crc error\n", blk->chn + 1);
 
         }
         /* try to fix error */
         if(pn) {
             if (fixprerr(blk, crc, pr, pn) == 0) {
                 if (verbose)
-                    fprintf(stderr, "#%d not able to fix errors\n", blk->chn + 1);
+                    fprintf(stderr, "acarsdec:   #%d not able to fix errors\n", blk->chn + 1);
                 free(blk);
                 continue;
             }
             if (verbose)
-                fprintf(stderr, "#%d errors fixed\n", blk->chn + 1);
+                fprintf(stderr, "acarsdec:   #%d errors fixed\n", blk->chn + 1);
         } else {
             if (crc) {
                 if(fixdberr(blk, crc) == 0) {
                     if (verbose)
-                        fprintf(stderr, "#%d not able to fix errors\n", blk->chn + 1);
+                        fprintf(stderr, "acarsdec:   #%d not able to fix errors\n", blk->chn + 1);
                     free(blk);
                     continue;
                 }
                 if (verbose)
-                    fprintf(stderr, "#%d errors fixed\n", blk->chn + 1);
+                    fprintf(stderr, "acarsdec:   #%d errors fixed\n", blk->chn + 1);
             }
         }
 
-        fprintf(stderr, "OK!\n");
 
         /* redo parity checking and removing */
         pn = 0;
@@ -192,11 +190,12 @@ static void *blk_thread(void *arg)
             blk->txt[i] &= 0x7f;
         }
         if (pn) {
-            fprintf(stderr, "#%d parity check problem\n",
+            fprintf(stderr, "acarsdec:   #%d parity check problem\n",
                     blk->chn + 1);
             free(blk);
             continue;
         }
+        fprintf(stderr, "acarsdec:   OK!   Receive 1 message!!!, ack = %d\n", ack);
         outputmsg(blk);
         free(blk);
     } while (1);
@@ -287,9 +286,15 @@ void decodeAcars(channel_t * ch, int n)
                 ch->blk->err++;
 
                 if (ch->blk->err > MAXPERR + 1) {
+                    for(int i = 150;i < ch->blk->len; i++){
+                        printf(" { %d , %d } ",i,ch->blk->txt[i]);
+                    }
+                    fprintf(stderr, "\n %d  \n", ch->blk->len);
+
+
                     if (verbose)
                         fprintf(stderr,
-                                "#%d too many parity errors\n",
+                                "acarsdec:  #%d too many parity errors\n",
                                 ch->chn + 1);
                     resetAcars(ch);
                     return;
@@ -302,7 +307,7 @@ void decodeAcars(channel_t * ch, int n)
             }
             if (ch->blk->len > 20 && r == DLE) {
                 if (verbose)
-                    fprintf(stderr, "#%d miss txt end\n",
+                    fprintf(stderr, "acarsdec:   #%d miss txt end\n",
                             ch->chn + 1);
                 ch->blk->len -= 3;
                 ch->blk->crc[0] = ch->blk->txt[ch->blk->len];
@@ -312,7 +317,7 @@ void decodeAcars(channel_t * ch, int n)
             }
             if (ch->blk->len > 240) {
                 if (verbose)
-                    fprintf(stderr, "#%d too long\n", ch->chn + 1);
+                    fprintf(stderr, "acarsdec:   #%d too long\n", ch->chn + 1);
                 resetAcars(ch);
                 return;
             }
@@ -326,7 +331,7 @@ void decodeAcars(channel_t * ch, int n)
             return;
         case CRC2:
             ch->blk->crc[1] = r;
-            fprintf(stderr, "crc in message :   %d %d\n",ch->blk->crc[0], ch->blk->crc[1]);
+            fprintf(stderr, "acarsdec:   crc in message :   %d %d %d\n",ch->blk->crc[0], ch->blk->crc[1], ch->blk->len);
         putmsg_lbl:
             ch->blk->lvl = 10*log10(ch->Msklvl);
 
