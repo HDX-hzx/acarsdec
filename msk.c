@@ -51,6 +51,50 @@ int initMsk(channel_t * ch)
 
 static inline void putbit(float v, channel_t * ch, int n)
 {
+    /*
+    int bit;
+
+    if (v > 0)
+        bit = 1;
+    else
+        bit = 0;
+
+    static unsigned long bit_cnt = 0;
+
+    bit_cnt++;
+
+    if (bit_cnt <= 300)
+    {
+        printf("%d", bit);
+
+        if (bit_cnt % 8 == 0)
+            printf(" ");
+
+        if (bit_cnt % 64 == 0)
+            printf("\n");
+
+        fflush(stdout);
+    }
+
+
+
+    ch->outbits >>= 1;
+
+    if (bit)
+        ch->outbits |= 0x80;
+
+
+    ch->nbits--;
+
+
+
+    if (ch->nbits <= 0)
+    {
+        decodeAcars(ch, n);
+    }
+*/
+
+    //下屬爲最初代碼
     ch->outbits >>= 1;
     if (v > 0) {
         ch->outbits |= 0x80;
@@ -59,6 +103,7 @@ static inline void putbit(float v, channel_t * ch, int n)
     if (ch->nbits <= 0){
         decodeAcars(ch, n);
     }
+
 }
 
 const float PLLG=38e-4;
@@ -119,6 +164,83 @@ void demodMSK(channel_t *ch,int len)
                 vo=crealf(v);
                 if(vo>=0) dphi=cimagf(v); else dphi=-cimagf(v);
             }
+
+         /*  //下述为调试代码
+            static unsigned long decision_count = 0;
+
+            static unsigned long strong_bits = 0;
+            static unsigned long weak_bits = 0;
+
+            static float abs_vo_sum = 0.0f;
+            static float abs_vo_min = 999.0f;
+            static float abs_vo_max = 0.0f;
+
+            float abs_vo = fabsf(vo);
+
+            decision_count++;
+
+            abs_vo_sum += abs_vo;
+
+            if(abs_vo < abs_vo_min)
+                abs_vo_min = abs_vo;
+
+            if(abs_vo > abs_vo_max)
+                abs_vo_max = abs_vo;
+
+
+            if(abs_vo >= 0.5f)
+                strong_bits++;
+            else
+                weak_bits++;
+
+            if(decision_count % 500 == 0)
+            {
+                printf(
+                    "[MSK QUALITY] "
+                    "bits=%lu "
+                    "avg|vo|=%.3f "
+                    "min=%.3f "
+                    "max=%.3f "
+                    "strong=%.1f%% "
+                    "weak=%.1f%% "
+                    "lvl=%.6f "
+                    "MskDf=%.6f\n",
+                    decision_count,
+                    abs_vo_sum / 500.0f,
+                    abs_vo_min,
+                    abs_vo_max,
+                    100.0f * strong_bits / 500.0f,
+                    100.0f * weak_bits / 500.0f,
+                    lvl,
+                    ch->MskDf
+                );
+
+                abs_vo_sum = 0.0f;
+                abs_vo_min = 999.0f;
+                abs_vo_max = 0.0f;
+
+                strong_bits = 0;
+                weak_bits = 0;
+            }  */
+
+           /*  //调试代码
+            static unsigned long demod_bit_count = 0;
+
+            demod_bit_count++;
+
+            if(demod_bit_count % 500 == 0)
+            {
+                printf(
+                    "[MSK] bits=%lu "
+                    "vo=%f lvl=%f "
+                    "MskDf=%f\n",
+                    demod_bit_count,
+                    vo,
+                    lvl,
+                    ch->MskDf
+                );
+            }
+            //上述为调试代码 */
 
             if(ch->MskS&2) {
                 putbit(-vo, ch, n);

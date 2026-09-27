@@ -26,6 +26,9 @@
 #include <math.h>
 #include <rtl-sdr.h>
 #include "acarsdec.h"
+#include <complex.h>
+#include <signal.h>
+#include <unistd.h>
 
 // set the sameple rate by changing RTMULT
 // 2.5Ms/s is the best but could be over limit for some hardware
@@ -350,6 +353,19 @@ static void in_callback(unsigned char *rtlinbuff, uint32_t nread, void *ctx)
 		float complex D,*wf;
 
 		wf = ch->wf;
+		/* printf("wf=%p\n", (void *)wf);
+
+		if (wf != NULL)
+		{
+			printf("wf[0]=%f + %fi\n",
+				   crealf(wf[0]),
+				   cimagf(wf[0]));
+
+			printf("wf[1]=%f + %fi\n",
+				   crealf(wf[1]),
+				   cimagf(wf[1]));
+		} */
+
 		m=0;
 		for (i = 0; i < RTLINBUFSZ;) {
 			int ind;
@@ -385,5 +401,7 @@ int runRtlSample(void)
 	}
 	return status;
 }
+
+
 
 #endif

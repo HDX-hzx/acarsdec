@@ -25,10 +25,19 @@
 #include <sched.h>
 #include <unistd.h>
 #include <limits.h>
+
+#include "modulator.h"
 #ifdef HAVE_LIBACARS
 #include <libacars/version.h>
 #endif
 #include "acarsdec.h"
+
+#ifdef WITH_USRP
+#include "usrp.h"
+#endif
+
+
+
 extern void build_label_filter(char *arg);
 
 channel_t channel[MAXNBCHANNELS];
@@ -45,9 +54,16 @@ int hourly = 0;
 int daily = 0;
 
 #ifdef WITH_RTL
-int gain = 1000;
+int gain = 80;
 int ppm = 0;
 #endif
+
+#ifdef WITH_USRP
+int rx_gain = 10;    // USRP：单位 dB
+int tx_gain = 0;     // USRP：单位 dB
+int64_t freq = 131450000;
+#endif
+
 char *Rawaddr = NULL;
 char *logfilename = NULL;
 
@@ -123,12 +139,19 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 	char sys_hostname[HOST_NAME_MAX+1];
 	char *lblf=NULL;
+	message_format *mf;
+	mf = malloc(sizeof(message_format));
+	if(mf==NULL)
+	{
+		fprintf(stderr,"malloc mf failed\n");
+		exit(1);
+	}
 
 	gethostname(sys_hostname, sizeof(sys_hostname));
 	idstation = strndup(sys_hostname, 32);
 
 	res = 0;
-	while ((c = getopt(argc, argv, "HDvarfsRo:t:g:UDp:n:N:j:l:c:i:L:G:b:")) != EOF) {
+	while ((c = getopt(argc, argv, "HDvarfsRo:t:g:G:u:UDp:n:N:j:l:c:i:L:b:")) != EOF) {
 
 		switch (c) {
 		case 'v':
@@ -143,11 +166,14 @@ int main(int argc, char **argv)
 		case 'b':
 			lblf=optarg;
 			break;
+
 #ifdef WITH_SNDFILE
 		case 'f':
+		/*	printf("OPTION -f detected\n");
+			printf("optarg = '%s'\n", optarg); */
 			res = initSoundfile(argv, optind);
 			inmode = 2;
-			break;
+			break; 
 #endif
 #ifdef WITH_RTL
 		case 'r':
@@ -158,9 +184,35 @@ int main(int argc, char **argv)
 		case 'p':
 			ppm = atoi(optarg);
 			break;
-    		case 'g':
+
+#endif
+		case 'g':
+#ifdef WITH_USRP
+			rx_gain = atoi(optarg);
+			printf("[GETOPT RX GAIN] rx_gain=%d dB\n", rx_gain);
+#endif
+#ifdef WITH_RTL
 			gain = atoi(optarg);
+#endif
 			break;
+		case 'G':
+#ifdef WITH_USRP
+			tx_gain = atoi(optarg);
+			printf("[GETOPT TX GAIN] tx_gain=%d dB\n", tx_gain);
+#endif
+			break;
+
+
+#ifdef WITH_USRP
+
+		case 'u':
+
+			{
+				res=preinitUsrp_lib(optarg);
+				inmode=4;
+				break;
+			}
+
 #endif
 		case 'n':
 			Rawaddr = optarg;
@@ -195,6 +247,23 @@ int main(int argc, char **argv)
 			usage();
 		}
 	}
+
+	//以下是新增調試
+	printf("\n========== GETOPT DEBUG ==========\n");
+	printf("argc = %d\n", argc);
+	printf("optind = %d\n", optind);
+
+	for (int k = 0; k < argc; k++)
+	{
+		printf("argv[%d] = '%s'%s\n",
+			   k,
+			   argv[k],
+			   (k == optind) ? "  <-- optind" : "");
+	}
+	//上述是新增調試
+
+
+	printf("After getopt gain=%d\n",gain);//调试
 
 	if (inmode == 0) {
 		fprintf(stderr, "Need at least one of -a|-f|-r|-R options\n");
@@ -237,6 +306,8 @@ int main(int argc, char **argv)
 		if (res)
 			break;
 	}
+	printf("Decoder initialized\n");
+
 
 	if (res) {
 		fprintf(stderr, "Unable to init internal decoders\n");
@@ -263,6 +334,65 @@ int main(int argc, char **argv)
 	case 3:
 		res = runRtlSample();
 		break;
+#endif
+#ifdef WITH_USRP
+
+	case 4:
+		{
+
+			pthread_t rx_thread;
+			pthread_t tx_thread;
+
+
+
+			pthread_create(
+					&rx_thread,
+					NULL,
+					usrp_rx_thread,
+					NULL);
+
+
+
+			pthread_create(
+					&tx_thread,
+					NULL,
+					usrp_tx_thread,
+					NULL);
+
+
+
+			while(1)
+			{
+
+
+				prepare_tx_packet();
+
+
+				pthread_mutex_lock(
+					&tx_mutex);
+
+
+
+				tx_ready=1;
+
+
+				pthread_cond_signal(
+					&tx_cond);
+
+
+
+				pthread_mutex_unlock(
+					&tx_mutex);
+
+
+
+			}
+
+
+			break;
+
+		}
+
 #endif
 	default:
 		res = -1;

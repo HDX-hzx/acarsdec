@@ -26,7 +26,22 @@
 #endif
 
 #define MAXNBCHANNELS 8
+/*
+#ifdef WITH_RTL
 #define INTRATE 12500
+#define RX_MULT 160
+#endif
+
+
+#ifdef WITH_USRP
+#define INTRATE 12500
+#define RX_MULT 96
+#endif
+*/
+
+
+#define INTRATE 12500
+#define RTLMULT 160
 
 #define NETLOG_NONE 0
 #define NETLOG_PLANEPLOTTER 1
@@ -139,8 +154,17 @@ extern int airflt;
 extern int mdly;
 extern int hourly, daily;
 
+#ifdef WITH_RTL
 extern int gain;
 extern int ppm;
+#endif
+
+#ifdef WITH_USRP
+extern int rx_gain;
+extern int tx_gain;
+extern int64_t freq;
+#endif
+
 extern	int	lnaState;
 extern	int	GRdB;
 extern int initOutput(char*,char *);

@@ -89,7 +89,7 @@ static void *blk_thread(void *arg)
     do {
         msgblk_t *blk;
         int i, pn;
-        unsigned short crc;
+        unsigned short crc = 0;
         int pr[MAXPERR];
 
         pthread_mutex_lock(&ch->blkmtx);
@@ -209,6 +209,14 @@ int initAcars(channel_t * ch)
     ch->nbits = 8;
     ch->Acarsstate = WSYN;
 
+    ch->MskPhi = 0;
+    ch->MskDf  = 0;
+    ch->Mskpv  = 0;
+    ch->Msklvl = 0;
+    ch->MskClk = 0;
+    ch->MskS   = 0;
+    ch->idx    = 0;//上述七行新增
+
     ch->blkq_s = NULL;
     ch->blkq_e = NULL;
     ch->acars_shutdown = 0;
@@ -234,11 +242,13 @@ static void resetAcars(channel_t * ch)
 void decodeAcars(channel_t * ch, int n)
 {
     unsigned char r = ch->outbits;
-    //printf("%x  %x  %d\n",r,ch->Acarsstate, n);
 
     switch (ch->Acarsstate) {
         case WSYN:
             if (r == SYN) {
+            /*   printf("\n========== SYNC FOUND ==========\n");//上述打印为增加调试  */
+
+
                 ch->Acarsstate = SYN2;
                 ch->nbits = 8;
                 return;
@@ -253,7 +263,9 @@ void decodeAcars(channel_t * ch, int n)
             return;
 
         case SYN2:
+      /* printf("SYN2 byte = 0x%02X\n", r);//ts  */
             if (r == SYN) {
+            /*   printf("SECOND SYN OK\n"); //调试  */
                 ch->Acarsstate = SOH1;
                 ch->nbits = 8;
                 return;
@@ -267,6 +279,7 @@ void decodeAcars(channel_t * ch, int n)
             return;
 
         case SOH1:
+      /* printf("SOH candidate = 0x%02X\n",r); //调试  */
             if (r == SOH) {
                 gettimeofday(&(ch->blk->tv), NULL);
                 ch->Acarsstate = TXT;
@@ -276,6 +289,7 @@ void decodeAcars(channel_t * ch, int n)
                 ch->Msklvl = 0;
                 return;
             }
+      /*  printf("SOH ERROR: expected 0x%02X, got 0x%02X\n",SOH,r);调试*/
             resetAcars(ch);
             return;
 
